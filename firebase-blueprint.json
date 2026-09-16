@@ -1,0 +1,160 @@
+{
+  "entities": {
+    "TrackConfig": {
+      "title": "TrackConfig",
+      "description": "Configuration for a horse racing track program sequence",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The unique track identifier (e.g., 'hch', 'chs', 'vsp')" },
+        "baseDate": { "type": "string", "description": "The baseline ISO date (e.g., '2026-05-21', or any standard date)" },
+        "baseCode": { "type": "number", "description": "The baseline sequence code or code multiplier if appropriate" },
+        "urlPattern": { "type": "string", "description": "The URL path pattern (e.g., 'https://storage.elturf.com/pdf_programa/pdf_hch/{code}.pdf', 'https://www.clubhipico.cl/carreras/resumen-jornada/?{date}', or 'https://www.sporting.cl/hipica/front/es/reunion/{date}.html')" },
+        "updatedAt": { "type": "string", "description": "ISO timestamp of the update" }
+      },
+      "required": ["id", "baseDate", "baseCode", "urlPattern"]
+    },
+    "RaceProgram": {
+      "title": "RaceProgram",
+      "description": "Calculated or manual race meeting program reference",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique record identifier" },
+        "trackId": { "type": "number", "description": "Teletrak ID of the track" },
+        "date": { "type": "string", "description": "Race date as YYYY-MM-DD" },
+        "programCode": { "type": "number", "description": "Calculated PDF correlative sequence number" },
+        "pdfUrl": { "type": "string", "description": "Exact URL of the PDF program" },
+        "createdAt": { "type": "string", "description": "ISO timestamp when mapped" }
+      },
+      "required": ["id", "trackId", "date", "programCode", "pdfUrl"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "name"]
+    },
+    "Horse": {
+      "title": "Horse",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" }
+      },
+      "required": ["userId", "name"]
+    },
+    "UpcomingProgramUrl": {
+      "title": "UpcomingProgramUrl",
+      "properties": {
+        "url": { "type": "string" },
+        "status": { "type": "string", "description": "pending, processed, failed" },
+        "trackId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["url", "status", "trackId", "createdAt"]
+    },
+    "Program": {
+      "title": "Program",
+      "properties": {
+        "trackId": { "type": "string" },
+        "date": { "type": "string" },
+        "horses": { 
+            "type": "array", 
+            "items": { 
+                "type": "object", 
+                "properties": { 
+                    "name": { "type": "string" },
+                    "carrera": { "type": "number" },
+                    "recinto": { "type": "string" }
+                }
+            } 
+        },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["trackId", "date", "horses", "createdAt"]
+    },
+    "HorseCache": {
+      "title": "HorseCache",
+      "description": "Cache of upcoming presentations for tracked horses",
+      "type": "object",
+      "properties": {
+        "horseName": { "type": "string" },
+        "cacheDate": { "type": "string", "description": "The date when this cache was stored (YYYY-MM-DD)" },
+        "expiresAt": { "type": "string", "description": "The date when this cache expires (equal to the detected race date, or today's date if no race found)" },
+        "matches": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "horseName": { "type": "string" },
+              "trackName": { "type": "string" },
+              "trackId": { "type": "number" },
+              "date": { "type": "string" },
+              "carrera": { "type": "number" },
+              "pdfUrl": { "type": "string" },
+              "isSimulated": { "type": "boolean" }
+            }
+          }
+        },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["horseName", "cacheDate", "matches", "createdAt"]
+    },
+    "UserVolanteCache": {
+      "title": "UserVolanteCache",
+      "description": "Cache of found race matches for a user with precise expiration date",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "horseName": { "type": "string" },
+        "trackName": { "type": "string" },
+        "trackId": { "type": "number" },
+        "date": { "type": "string" },
+        "carrera": { "type": "number" },
+        "pdfUrl": { "type": "string" },
+        "isSimulated": { "type": "boolean" },
+        "expiresAt": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "horseName", "trackName", "trackId", "date", "carrera", "pdfUrl", "expiresAt", "createdAt"]
+    }
+  },
+  "firestore": {
+    "track_configs/{trackId}": {
+      "schema": "TrackConfig",
+      "description": "Stores tracking numbers sequence reference point for custom programs"
+    },
+    "race_programs/{programId}": {
+      "schema": "RaceProgram",
+      "description": "Persisted mapped PDF programs for each race day"
+    },
+    "users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "horses/{horseId}": {
+      "schema": "Horse",
+      "description": "User's registered horses"
+    },
+    "upcoming_program_urls/{urlId}": {
+      "schema": "UpcomingProgramUrl",
+      "description": "List of URLs to be processed for scraping/pdf analysis"
+    },
+    "programs/{programId}": {
+      "schema": "Program",
+      "description": "Publicados programas de carreras"
+    },
+    "horses_cache/{cacheId}": {
+      "schema": "HorseCache",
+      "description": "Cache entries for horse track upcoming presentations"
+    },
+    "user_volante_cache/{cacheId}": {
+      "schema": "UserVolanteCache",
+      "description": "Matches found for the club hipico volante or other tracks with specific race day expiration"
+    }
+  }
+}

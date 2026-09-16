@@ -1,0 +1,233 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global safety net (default deny catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helper Functions ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[-a-zA-Z0-9_]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Enterprise-Grade Entity Validation Blueprints ---
+
+    // TrackConfig Entity Validation
+    function isValidTrackConfig(data) {
+      return data.keys().hasAll(['id', 'baseDate', 'baseCode', 'urlPattern']) &&
+             data.id is string && data.id.size() <= 50 &&
+             data.baseDate is string && data.baseDate.size() <= 20 &&
+             data.baseCode is int && data.baseCode > 0 &&
+             data.urlPattern is string && data.urlPattern.size() <= 300 &&
+             (!data.keys().hasAny(['updatedAt']) || (data.updatedAt is string && data.updatedAt.size() <= 50));
+    }
+
+    // RaceProgram Entity Validation
+    function isValidRaceProgram(data) {
+      return data.keys().hasAll(['id', 'trackId', 'date', 'programCode', 'pdfUrl']) &&
+             data.id is string && data.id.size() <= 100 &&
+             (data.trackId is int || data.trackId is string) &&
+             data.date is string && data.date.size() <= 20 &&
+             data.programCode is int && data.programCode > 0 &&
+             data.pdfUrl is string && data.pdfUrl.size() <= 300 &&
+             (!data.keys().hasAny(['createdAt']) || (data.createdAt is string && data.createdAt.size() <= 50));
+    }
+
+    // User Profile Entity Validation
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'name']) &&
+             data.uid is string && data.uid.size() <= 128 &&
+             data.uid == request.auth.uid &&
+             data.email is string && data.email.size() <= 128 &&
+             data.name is string && data.name.size() <= 128 &&
+             (!data.keys().hasAny(['createdAt']) || (data.createdAt is string && data.createdAt.size() <= 50)) &&
+             (!data.keys().hasAny(['lastLogin']) || (data.lastLogin is string && data.lastLogin.size() <= 50)) &&
+             (!data.keys().hasAny(['subscriptionStatus']) || (data.subscriptionStatus is string && data.subscriptionStatus.size() <= 20)) &&
+             (!data.keys().hasAny(['subscriptionExpiry']) || (data.subscriptionExpiry is string && data.subscriptionExpiry.size() <= 50));
+    }
+
+    // Horse Profile Entity Validation
+    function isValidHorse(data) {
+      return data.keys().hasAll(['userId', 'name']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.name is string && data.name.size() <= 128 &&
+             (!data.keys().hasAny(['track']) || (data.track is string && data.track.size() <= 128)) &&
+             (!data.keys().hasAny(['competition']) || (data.competition is string && data.competition.size() <= 128));
+    }
+
+    // UpcomingProgramUrl Entity Validation
+    function isValidUpcomingProgramUrl(data) {
+      return data.keys().hasAll(['url', 'status', 'trackId', 'createdAt']) &&
+             data.url is string && data.url.size() <= 300 &&
+             data.status is string && (data.status == 'pending' || data.status == 'processed' || data.status == 'failed') &&
+             data.trackId is string && data.trackId.size() <= 50 &&
+             data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // Published Race Program Validation
+    function isValidProgram(data) {
+      return data.keys().hasAll(['trackId', 'horses', 'createdAt']) &&
+             (data.trackId is string || data.trackId is int) &&
+             data.horses is list && data.horses.size() <= 500 &&
+             (data.horses.size() == 0 || data.horses[0] is map) &&
+             (!data.keys().hasAny(['date']) || (data.date is string && data.date.size() <= 20)) &&
+             (!data.keys().hasAny(['fecha']) || (data.fecha is string && data.fecha.size() <= 20)) &&
+             (data.createdAt is string || data.createdAt is timestamp);
+    }
+
+    // Horse Presentation Cache Validation
+    function isValidHorseCache(data) {
+      return data.keys().hasAll(['horseName', 'cacheDate', 'matches', 'createdAt']) &&
+             data.horseName is string && data.horseName.size() <= 128 &&
+             data.cacheDate is string && data.cacheDate.size() <= 20 &&
+             data.matches is list && data.matches.size() <= 100 &&
+             (data.matches.size() == 0 || data.matches[0] is map) &&
+             data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // UserVolanteCache Validation
+    function isValidUserVolanteCache(data) {
+      return data.keys().hasAll(['userId', 'horseName', 'trackName', 'trackId', 'date', 'carrera', 'pdfUrl', 'isSimulated', 'expiresAt', 'createdAt']) &&
+             data.userId is string && data.userId == request.auth.uid &&
+             data.horseName is string && data.horseName.size() <= 128 &&
+             data.trackName is string && data.trackName.size() <= 128 &&
+             (data.trackId is int || data.trackId is string) &&
+             data.date is string && data.date.size() <= 20 &&
+             (data.carrera is int || data.carrera is string) &&
+             data.pdfUrl is string && data.pdfUrl.size() <= 300 &&
+             data.isSimulated is bool &&
+             data.expiresAt is string && data.expiresAt.size() <= 20 &&
+             data.createdAt is string && data.createdAt.size() <= 50;
+    }
+
+    // --- Secure Collection Maps ---
+
+    // linkinteres security rules
+    match /linkinteres/{linkId} {
+      allow read: if true;
+    }
+
+    // track_configs security rules
+    match /track_configs/{trackId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(trackId) && isValidTrackConfig(incoming());
+      allow update: if isSignedIn() && isValidId(trackId) && isValidTrackConfig(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['baseDate', 'baseCode', 'urlPattern', 'updatedAt'])
+      );
+      allow delete: if isSignedIn() && isValidId(trackId);
+    }
+
+    // race_programs security rules
+    match /race_programs/{programId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(programId) && isValidRaceProgram(incoming());
+      allow update: if isSignedIn() && isValidId(programId) && isValidRaceProgram(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['pdfUrl', 'programCode'])
+      );
+      allow delete: if isSignedIn() && isValidId(programId);
+    }
+
+    // users security rules (PII Isolation & Owner verification)
+    match /users/{userId} {
+      allow get: if isSignedIn() && userId == request.auth.uid;
+      allow list: if false;
+      allow create: if isSignedIn() && userId == request.auth.uid && isValidId(userId) && isValidUser(incoming());
+      allow update: if isSignedIn() && userId == request.auth.uid && isValidId(userId) && isValidUser(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'email', 'createdAt', 'uid', 'lastLogin', 'subscriptionStatus', 'subscriptionExpiry'])
+      );
+    }
+
+    // horses security rules (Strict relational isolation)
+    match /horses/{horseId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(horseId) && isValidHorse(incoming());
+      allow update: if isSignedIn() && isValidId(horseId) && resource.data.userId == request.auth.uid && isValidHorse(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'track', 'competition'])
+      );
+      allow delete: if isSignedIn() && isValidId(horseId) && resource.data.userId == request.auth.uid;
+    }
+
+    // upcoming_program_urls security rules
+    match /upcoming_program_urls/{urlId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(urlId) && isValidUpcomingProgramUrl(incoming());
+      allow update: if isSignedIn() && isValidId(urlId) && isValidUpcomingProgramUrl(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+      );
+      allow delete: if isSignedIn() && isValidId(urlId);
+    }
+
+    // programs security rules
+    match /programs/{programId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isValidId(programId) && isValidProgram(incoming());
+      allow update: if isSignedIn() && isValidId(programId) && isValidProgram(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['horses', 'createdAt'])
+      );
+      allow delete: if isSignedIn() && isValidId(programId);
+    }
+
+    // horses_cache security rules
+    match /horses_cache/{cacheId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isValidId(cacheId) && isValidHorseCache(incoming());
+      allow delete: if isSignedIn() && isValidId(cacheId);
+    }
+
+    // user_volante_cache security rules
+    match /user_volante_cache/{cacheId} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && isValidId(cacheId) && isValidUserVolanteCache(incoming());
+      allow delete: if isSignedIn() && isValidId(cacheId) && resource.data.userId == request.auth.uid;
+    }
+
+    // pdfs_cacheados security rules
+    match /pdfs_cacheados/{pdfId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+      match /paginas/{paginaId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+    }
+
+    // programs_indexed security rules
+    match /programs_indexed/{indexId} {
+      allow read: if true;
+      allow write: if true; // Temporarily open for server-side indexing
+    }
+
+    // manual_overrides security rules
+    match /manual_overrides/{overrideId} {
+      allow read: if true;
+      allow write: if true; // Allow quick fixes without redeploy
+    }
+
+    // recintos security rules
+    match /recintos/{recintoId} {
+      allow read, write: if true;
+      match /jornadas/{jornadaId} {
+        allow read, write: if true;
+      }
+    }
+
+    // system security rules (Public config)
+    match /system/{document} {
+      allow read: if true;
+      allow write: if true; // Allow server-side calendar updates
+    }
+  }
+}

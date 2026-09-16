@@ -1,0 +1,54 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&display=swap');
+
+@theme {
+  --color-primary: #00200e;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #143621;
+  --color-on-primary-container: #7ba084;
+  
+  --color-secondary: #8b4e3a;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #fdae94;
+  --color-on-secondary-container: #783f2c;
+  
+  --color-tertiary: #b6924c;
+  --color-on-tertiary: #ffffff;
+  
+  --color-surface-parchment: #fbf9f5;
+  --color-surface-dim: #dbdad6;
+  --color-on-surface: #1b1c1a;
+  --color-on-surface-variant: #424842;
+  
+  --font-serif: "EB Garamond", Georgia, serif;
+  --font-sans: "Hanken Grotesk", system-ui, sans-serif;
+  
+  --radius-xl: 1.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-surface-parchment text-on-surface font-sans antialiased selection:bg-emerald-200 selection:text-emerald-950;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+}
+
+.markdown-body h1 {
+  @apply text-4xl font-semibold mb-6;
+}
+
+.markdown-body p {
+  @apply mb-4 leading-relaxed;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

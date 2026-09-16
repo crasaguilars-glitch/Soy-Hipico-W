@@ -1,0 +1,6 @@
+{
+  "name": "Soy Hípico Web",
+  "description": "Plataforma web para los amantes de la hípica chilena con programas oficiales, búsqueda de ejemplares, seguimiento de ejemplares regalones y señal en vivo.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
