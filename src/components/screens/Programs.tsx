@@ -143,7 +143,7 @@ export default function ProgramsScreen({ defaultFilter = 'today' }: { defaultFil
                 <button
                   onClick={async () => {
                     const trackId = Number(track.trackId);
-                    const url = race.programa_pdf || getOfficialProgramUrl(trackId, race.fecha);
+                    const url = getOfficialProgramUrl(trackId, race.fecha);
                     await openInternalBrowser(url);
                   }}
                   className="py-3 px-3 bg-primary hover:bg-primary/90 text-white font-bold text-xs rounded-xl uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-sm transition-all"
@@ -156,7 +156,7 @@ export default function ProgramsScreen({ defaultFilter = 'today' }: { defaultFil
                 <button
                   onClick={async () => {
                     const trackId = Number(track.trackId);
-                    const url = race.volante_pdf || getOfficialVolanteUrl(trackId, race.fecha);
+                    const url = getOfficialVolanteUrl(trackId, race.fecha);
                     await openInternalBrowser(url);
                   }}
                   className="py-3 px-3 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl uppercase tracking-wider cursor-pointer flex items-center justify-center gap-1.5 shadow-sm transition-all"

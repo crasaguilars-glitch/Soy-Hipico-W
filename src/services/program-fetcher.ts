@@ -25,49 +25,64 @@ const CHCParser: TrackParser = {
 
 const VSCParser: TrackParser = {
   getProgramUrl: (date: Date) => {
-    const day = date.getDate().toString().padStart(2, '0');
-    const monthIndex = date.getMonth();
-    const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-    const monthName = monthNames[monthIndex];
-    const monthPath = (monthIndex + 1).toString().padStart(2, '0');
-    const url = `https://www.sporting.cl/hipica/upload/handout/${date.getFullYear()}-${monthPath}-${day}/VOLANTE_${day}_${monthName}_COLOR.pdf`;
-    return url;
+
+
+
+
+
+
+
+    // Nota: El link antiguo `sporting.cl/hipica/upload/handout/...` ya no es válido.
+    // Sporting publica actualmente sus programas en Issuu bajo el nombre "Revista Tierra Derecha".
+    // Se requiere una lógica que consulte a su API o busque el enlace dinámico.
+    console.warn("VSC URL generator necesita ser actualizada para consultar fuentes externas.");
+    return ""; 
   },
   parse: async (url: string, onProgress?: (p: number) => void) => {
     onProgress?.(20);
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/parse-pdf?url=${encodeURIComponent(url)}`);
-      onProgress?.(50);
-      const text = response.data?.text || '';
-      console.log("PDF Text extracted via API, length:", text.length);
-      
-      const programData: ProgramData = {
-        trackId: 'VSC',
-        fecha: new Date().toISOString().split('T')[0],
-        horses: [
-          { name: "Command", carrera: 1, recinto: "Valparaíso Sporting" },
-          { name: "Ejemplar de Prueba", carrera: 2, recinto: "Valparaíso Sporting" }
-        ]
-      };
 
-      onProgress?.(80);
-      await saveProgramToFirestore(programData);
-      onProgress?.(100);
-      return programData;
-    } catch (e) {
-      console.error("Error parsing PDF via API:", e);
-      const programData: ProgramData = {
-        trackId: 'VSC',
-        fecha: new Date().toISOString().split('T')[0],
-        horses: [
-          { name: "Command", carrera: 1, recinto: "Valparaíso Sporting" },
-          { name: "Ejemplar de Prueba", carrera: 2, recinto: "Valparaíso Sporting" }
-        ]
-      };                
-      await saveProgramToFirestore(programData);
-      onProgress?.(100);
-      return programData;
-    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // Debido a la falta de un PDF estático predecible, esta función requiere 
+    // una lógica de scraping adaptada a la nueva estructura de Sporting.
+    console.error("VSC Parser: URL no válida o falta lógica de scraping para la fuente real.");
+    
+    onProgress?.(100);
+    return {
+      trackId: 'VSC',
+      fecha: new Date().toISOString().split('T')[0],
+      horses: []
+    };
   }
 };
 

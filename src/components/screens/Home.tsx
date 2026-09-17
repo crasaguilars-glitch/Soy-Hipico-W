@@ -188,7 +188,7 @@ export default function Home({
                   onClick={async () => {
                     if (activeTrack.todayRace) {
                       const trackId = Number(activeTrack.trackId);
-                      const url = activeTrack.todayRace.programa_pdf || activeTrack.todayRace.volante_pdf || getOfficialProgramUrl(trackId, activeTrack.todayRace.fecha);
+                      const url = getOfficialProgramUrl(trackId, activeTrack.todayRace?.fecha);
                       await openInternalBrowser(url);
                     }
                   }}
@@ -242,7 +242,7 @@ export default function Home({
                   <button
                     onClick={async () => {
                       const trackId = Number(activeTrack.trackId);
-                      const url = activeTrack.todayRace?.programa_pdf || activeTrack.todayRace?.volante_pdf || getOfficialProgramUrl(trackId, activeTrack.todayRace?.fecha);
+                      const url = getOfficialProgramUrl(trackId, activeTrack.todayRace?.fecha);
                       await openInternalBrowser(url);
                     }}
                     className="py-3 px-4 bg-primary hover:bg-primary/90 text-white font-bold text-xs rounded-xl shadow transition-all text-center uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"

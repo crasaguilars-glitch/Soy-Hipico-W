@@ -663,22 +663,30 @@ async function startServer() {
   });
 
   // Stud Book de Chile - Campaña de ejemplar
-  app.get("/api/horse/campaign/:id", async (req, res) => {
+ app.get("/api/horse/campaign/:id", async (req, res) => {
     let { id } = req.params;
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36';
     const headers = { 'User-Agent': userAgent, 'X-Requested-With': 'XMLHttpRequest' };
+
     try {
       if (isNaN(Number(id))) {
         const s = await axios.get(`https://www.studbookdechile.cl/recuperar_ejemplares?filtro=${encodeURIComponent(id)}`, { headers });
         if (s.data && s.data[0]) id = s.data[0].rut;
       }
+
+      // Consultas paralelas resilientes
       const results = await Promise.allSettled([
         axios.get(`https://www.studbookdechile.cl/api/campana/resumen?rut=${id}`, { headers }),
         axios.get(`https://www.studbookdechile.cl/api/campana/resumen-ext?rut=${id}`, { headers })
       ]);
+
       const nac = results[0].status === 'fulfilled' ? results[0].value.data : {};
       const int = results[1].status === 'fulfilled' ? results[1].value.data : {};
 
+
+      // AGREGA ESTO PARA VER QUÉ RECIBIMOS:
+      
+      // Unificar resumen anual
       const aniosMap = new Map();
       const processAnio = (a: any) => {
         if (!a || !a.anio) return;
@@ -689,31 +697,45 @@ async function startServer() {
         o.c1 += (a.c1 || 0);
         o.c2 += (a.c2 || 0);
         o.c3 += (a.c3 || 0);
+        if (a.sumaGanada?.formato) o.prize = a.sumaGanada.formato;
       };
 
-      (nac.anios || []).forEach(processAnio);
-      (int.anios || []).forEach(processAnio);
+      (nac.figuraciones?.anios || []).forEach(processAnio);
+      (int.figuraciones?.anios || []).forEach(processAnio);
 
-      const summary = {
-        total: {
-          cc: (nac.total?.cc || 0) + (int.total?.cc || 0),
-          c1: (nac.total?.c1 || 0) + (int.total?.c1 || 0),
-          c2: (nac.total?.c2 || 0) + (int.total?.c2 || 0),
-          c3: (nac.total?.c3 || 0) + (int.total?.c3 || 0),
-          c4: (nac.total?.c4 || 0) + (int.total?.c4 || 0),
-          prize: nac.total?.premio || '0'
-        },
-        years: Array.from(aniosMap.values()).sort((a, b) => Number(b.year) - Number(a.year))
+      const summary = Array.from(aniosMap.values())
+        .sort((a, b) => b.year.localeCompare(a.year))
+        .map(s => ({
+          year: s.year,
+          races: String(s.cc),
+          pos1: String(s.c1),
+          pos2: String(s.c2),
+          pos3: String(s.c3),
+          prizes: `$${s.prize}`
+        }));
+
+      // Extraer actuaciones de forma ultra-robusta
+      const actsNac = nac.figuraciones?.detalle || nac.campana?.actuaciones || nac.actuaciones || nac.detalle || [];
+      const actsInt = int.figuraciones?.detalle || int.campana?.actuaciones || int.actuaciones || int.detalle || [];
+
+      const parseDate = (d: string) => {
+        if (!d) return 0;
+        const p = d.split('/');
+        if (p.length < 3) return 0;
+        return new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0])).getTime();
       };
 
-      const perfRes = await axios.get(`https://www.studbookdechile.cl/api/campana/actuaciones?rut=${id}`, { headers }).catch(() => ({ data: [] }));
-      const performances = (perfRes.data || [])
-        .sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
-        .map((p: any) => ({
-          fecha: p.fecha,
-          hipodromo: p.hipodromo || p.recinto || '',
-          distancia: p.distancia || 0,
-          pista: p.pista || '',
+      const performances = [...actsNac, ...actsInt]
+        .filter(p => p && p.fecha)
+        .sort((a, b) => parseDate(b.fecha) - parseDate(a.fecha))
+        .slice(0, 15)
+        .map(p => ({
+          hipodromo: p.hipodromo || 'N/A',
+          fecha: p.fecha || '',
+          tipoCarrera: p.tipoCarrera || p.condicion || '',
+          premio: p.premio || p.nombrePremio || '',
+          distancia: String(p.distancia || ''),
+          distanciaUnidad: 'm',
           jinete: p.jinete || p.jinetePeso || '',
           lugar: String(p.lugar || ''),
           sumaGanada: p.sumaGanada || { formato: '0' }

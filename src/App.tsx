@@ -154,13 +154,7 @@ function AppContent() {
 
           {/* Right Action Icons & Mobile Menu Button */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => switchView('live')}
-              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-mono font-bold uppercase tracking-wider border border-red-200 transition-colors cursor-pointer"
-            >
-              <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-              <span>Teletrak TV</span>
-            </button>
+ 
 
             <button 
               onClick={() => setUserModalOpen(true)}
@@ -317,14 +311,15 @@ function AppContent() {
             </a>
             <span>•</span>
             <a 
-              href={TELETRAK_LIVE_STREAM_URL} 
+              href="https://clubhipicoconcepcion.cl/" 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-red-700 hover:text-red-800 font-bold hover:underline inline-flex items-center gap-1.5"
+              className="hover:text-primary hover:underline"
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse" />
-              <span>Señal en Vivo Teletrak</span>
+              Club Hipico de Concepción
             </a>
+            <span>•</span>
+           
           </div>
         </div>
       </footer>

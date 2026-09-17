@@ -4,6 +4,17 @@ import { twMerge } from 'tailwind-merge';
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+export async function openCenteredPlayer(url: string) {
+  const width = 800;
+  const height = 600;
+  const left = (window.screen.width / 2) - (width / 2);
+  const top = (window.screen.height / 2) - (height / 2);
+
+  const windowFeatures = `width=${width},height=${height},top=${top},left=${left},toolbar=no,location=no,status=no,menubar=no,scrollbars=no,resizable=yes`;
+  
+  window.open(url, "TeletrakLive", windowFeatures);
+}
+
 
 /**
  * URL oficial de la transmisión en directo Teletrak TV
@@ -13,19 +24,16 @@ export const TELETRAK_LIVE_STREAM_URL = "https://teletraktv.janus.cl/player2/pla
 /**
  * Abre una URL de forma segura en una nueva pestaña del navegador.
  * Usa un elemento <a> temporal para evitar bloqueos de ventanas emergentes (popups) en iframes.
- */
+ 
+*/
 export async function openInternalBrowser(url: string) {
-  if (!url) return;
-  try {
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  } catch {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  // CORRECCIÓN: Usamos la URL que recibimos por parámetro
+  // en lugar de forzar teletrak.cl
+  if (url && url.startsWith('http')) {
+    window.open(url, "_blank");
+  } else {
+    // Si la URL es inválida, fallamos elegantemente al sitio principal
+    window.open("https://www.teletrak.cl", "_blank");
   }
 }
 
@@ -91,8 +99,8 @@ export function getChsUrls(dateStr: string) {
  */
 export function getChcSequentialUrls(
   dateStr: string,
-  baseId: number = 101181,
-  baseDateStr: string = "2026-08-04"
+  baseId: number = 101189,
+  baseDateStr: string = "2026-09-17"
 ) {
   const normalized = normalizeToYYYYMMDD(dateStr);
   const parts = normalized.split('-');
@@ -115,7 +123,7 @@ export function getChcSequentialUrls(
     const code = baseId + count;
     return {
       code,
-      programa: `https://storage.elturf.com/pdf_volantes/pdf_chc/${code}.pdf`,
+      programa: `https://clubhipicoconcepcion.cl/carreras-proximos-programas`,
       volante: `https://storage.elturf.com/pdf_volantes/pdf_chc/${code}.pdf`
     };
   } else {
@@ -127,7 +135,7 @@ export function getChcSequentialUrls(
     const code = baseId - count;
     return {
       code,
-      programa: `https://storage.elturf.com/pdf_volantes/pdf_chc/${code}.pdf`,
+      programa: `https://clubhipicoconcepcion.cl/carreras-proximos-programas`,
       volante: `https://storage.elturf.com/pdf_volantes/pdf_chc/${code}.pdf`
     };
   }
@@ -138,8 +146,8 @@ export function getChcSequentialUrls(
  */
 export function getHchSequentialUrls(
   dateStr: string,
-  baseId: number = 101140,
-  baseDateStr: string = "2026-08-06"
+  baseId: number = 101151,
+  baseDateStr: string = "2026-09-19"
 ) {
   const normalized = normalizeToYYYYMMDD(dateStr);
   const parts = normalized.split('-');
@@ -199,7 +207,7 @@ export function getSportingUrls(dateStr: string) {
   const dayNum = date.getDate();
   
   return {
-    programa: `https://www.sporting.cl/hipica/upload/handout/${normalized}/VOLANTE_${dayNum}_${shortMonth}_COLOR.pdf`,
+    programa: `https://www.sporting.cl/hipica/front/es/reunion/${normalized}.html`,
     volante: `https://www.sporting.cl/hipica/upload/handout/${normalized}/VOLANTE_${dayNum}_${shortMonth}_COLOR.pdf`
   };
 }
@@ -224,13 +232,30 @@ export function getHchVolanteUrl(dateStr: string): string {
  */
 export function getOfficialProgramUrl(trackId: number, dateStr?: string): string {
   if (!dateStr) {
-    switch (trackId) {
-      case 1: return "https://clubhipicoconcepcion.cl/carreras-proximos-programas";
-      case 2: return "https://www.sporting.cl/";
-      case 3: return "https://www.clubhipico.cl/carreras/programas/";
-      case 4: return "https://www.hipodromochile.cl/revista-revista/";
-      default: return "https://www.teletrak.cl";
-    }
+switch (trackId) {
+    case 1: // Club Hípico de Concepción
+      return "https://clubhipicoconcepcion.cl/carreras-proximos-programas";
+    case 2: // Valparaíso Sporting
+      if (dateStr) {
+        const normalized = normalizeToYYYYMMDD(dateStr);
+        return `https://www.sporting.cl/hipica/front/es/reunion/${normalized}.html`;
+      }
+      return "https://www.sporting.cl/hipica/front/es/reunion/";
+    case 3: // Club Hípico de Santiago
+      if (dateStr) {
+        const normalized = normalizeToYYYYMMDD(dateStr);
+        const [y, m, d] = normalized.split('-');
+        return `https://static.clubhipico.cl/archivos/programa-digital/${d}-${m}-${y}.pdf`;
+      }
+      return "https://www.clubhipico.cl/carreras/programas/";
+    case 4: // Hipódromo Chile
+      if (dateStr) {
+        return getHchProgramCodeAndUrl(dateStr).url;
+      }
+      return "https://www.hipodromochile.cl/revista-revista/";
+    default:
+      return "https://www.teletrak.cl";
+  }
   }
 
   const normalized = normalizeToYYYYMMDD(dateStr);
