@@ -662,12 +662,11 @@ async function startServer() {
     }
   });
 
-  // Stud Book de Chile - Campaña de ejemplar
- app.get("/api/horse/campaign/:id", async (req, res) => {
+  // Registro Oficial - Campaña de ejemplar
+  app.get("/api/horse/campaign/:id", async (req, res) => {
     let { id } = req.params;
     const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36';
     const headers = { 'User-Agent': userAgent, 'X-Requested-With': 'XMLHttpRequest' };
-
     try {
       if (isNaN(Number(id))) {
         const s = await axios.get(`https://www.studbookdechile.cl/recuperar_ejemplares?filtro=${encodeURIComponent(id)}`, { headers });
@@ -683,9 +682,6 @@ async function startServer() {
       const nac = results[0].status === 'fulfilled' ? results[0].value.data : {};
       const int = results[1].status === 'fulfilled' ? results[1].value.data : {};
 
-
-      // AGREGA ESTO PARA VER QUÉ RECIBIMOS:
-      
       // Unificar resumen anual
       const aniosMap = new Map();
       const processAnio = (a: any) => {
@@ -700,8 +696,8 @@ async function startServer() {
         if (a.sumaGanada?.formato) o.prize = a.sumaGanada.formato;
       };
 
-      (nac.figuraciones?.anios || []).forEach(processAnio);
-      (int.figuraciones?.anios || []).forEach(processAnio);
+      (nac.figuraciones?.anios || nac.anios || []).forEach(processAnio);
+      (int.figuraciones?.anios || int.anios || []).forEach(processAnio);
 
       const summary = Array.from(aniosMap.values())
         .sort((a, b) => b.year.localeCompare(a.year))
@@ -725,12 +721,23 @@ async function startServer() {
         return new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0])).getTime();
       };
 
-      const performances = [...actsNac, ...actsInt]
-        .filter(p => p && p.fecha)
+      let rawActs = [...actsNac, ...actsInt];
+      if (rawActs.length === 0) {
+        // Fallback a endpoint de actuaciones si no venían en resumen
+        try {
+          const perfRes = await axios.get(`https://www.studbookdechile.cl/api/campana/actuaciones?rut=${id}`, { headers, timeout: 5000 });
+          if (Array.isArray(perfRes.data)) rawActs = perfRes.data;
+        } catch {
+          // Ignorar fallback
+        }
+      }
+
+      const performances = rawActs
+        .filter(p => p && (p.fecha || p.hipodromo))
         .sort((a, b) => parseDate(b.fecha) - parseDate(a.fecha))
-        .slice(0, 15)
+        .slice(0, 20)
         .map(p => ({
-          hipodromo: p.hipodromo || 'N/A',
+          hipodromo: p.hipodromo || p.recinto || 'N/A',
           fecha: p.fecha || '',
           tipoCarrera: p.tipoCarrera || p.condicion || '',
           premio: p.premio || p.nombrePremio || '',

@@ -97,15 +97,17 @@ function AppContent() {
               className="flex items-center gap-3 cursor-pointer group text-left"
               aria-label="Ir a Inicio"
             >
-              <div className="w-10 h-10 rounded-2xl bg-primary flex items-center justify-center text-amber-300 font-serif font-black text-xl shadow-xs group-hover:scale-105 transition-transform">
-                H
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-xs group-hover:scale-105 transition-transform shrink-0 border border-slate-200/80 bg-[#0d1b2a]">
+                <img 
+                  src="/app_icon.png" 
+                  alt="Soy Hípico" 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                />
               </div>
               <div className="flex flex-col">
                 <span className="text-xl sm:text-2xl font-serif font-black tracking-tight text-gray-950 uppercase leading-none group-hover:text-primary transition-colors">
                   Soy Hípico
-                </span>
-                <span className="text-[10px] font-mono tracking-widest uppercase text-emerald-800 font-bold mt-0.5">
-                  Hípica Chilena Oficial
                 </span>
               </div>
             </button>
@@ -154,8 +156,6 @@ function AppContent() {
 
           {/* Right Action Icons & Mobile Menu Button */}
           <div className="flex items-center gap-2">
- 
-
             <button 
               onClick={() => setUserModalOpen(true)}
               className="p-2.5 text-gray-700 hover:text-primary hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
@@ -264,12 +264,17 @@ function AppContent() {
       <footer className="bg-white border-t border-surface-dim mt-auto py-10 px-4 sm:px-6 lg:px-8 pb-24 lg:pb-10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-xs text-gray-500 font-sans">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-primary text-amber-300 flex items-center justify-center font-serif font-black text-sm">
-              H
+            <div className="w-9 h-9 rounded-xl overflow-hidden border border-slate-200 bg-[#0d1b2a] shrink-0">
+              <img 
+                src="/app_icon.png" 
+                alt="Soy Hípico" 
+                className="w-full h-full object-cover" 
+                referrerPolicy="no-referrer" 
+              />
             </div>
             <div>
               <p className="font-serif font-bold text-gray-900 text-sm">SOY HÍPICO • PLATAFORMA WEB</p>
-              <p className="text-[11px] text-gray-400">Información consolidada de la hípica chilena oficial.</p>
+              <p className="text-[11px] text-gray-400">Información consolidada de carreras y ejemplares.</p>
             </div>
           </div>
 
@@ -318,8 +323,6 @@ function AppContent() {
             >
               Club Hipico de Concepción
             </a>
-            <span>•</span>
-           
           </div>
         </div>
       </footer>
